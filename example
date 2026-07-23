@@ -1,0 +1,1312 @@
+--Xecel Example Script Latest
+
+setclipboard("https://discord.com/invite/PkrGuRqNx5")
+
+local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+local Options = Library.Options
+local Toggles = Library.Toggles
+
+Library.ForceCheckbox = true -- Forces AddToggle to AddCheckbox
+Library.ShowToggleFrameInKeybinds = true -- Make toggle keybinds work inside the keybinds UI (aka adds a toggle to the UI). Good for mobile users (Default value = true)
+
+ThemeManager:SetLibrary(Library)
+
+-- KENDİ RENKLERİNİ TANIMLA (HEX kodları, # olmadan)
+local myCustomDefault = {
+	BackgroundColor= "0f0f0f",  -- Neon yeşil yazı
+    MainColor      = "191919",  -- Koyu lacivert ana
+    AccentColor    = "db4467",  -- Magenta accent  -- Siyah arka plan
+    OutlineColor   = "282828",
+	FontColor      = "ffffff",  -- Koyu mavi outline
+    FontFace       = "Gotham"   -- Font (Code, Roboto, Gotham, SourceSans)
+}
+ThemeManager:SetDefaultTheme(myCustomDefault)
+
+local Window = Library:CreateWindow({
+	Center = true,
+	AutoShow = true,
+	Resizeble = true,
+	MobileButtonsSide = "Left",
+	Title = "Xecel",
+	Footer = "1.0.0 Xecel, Free, Lifetime, Keyless │ discord.gg/PkrGuRqNx5",
+	Icon = nil,
+	NotifySide = "Right",
+	ShowCustomCursor = false,
+})
+
+local Tabs = {
+	Main = Window:AddTab("Main", "house"),
+	Visual = Window:AddTab("Visual", "eye"),
+	["UI Settings"] = Window:AddTab("UI Settings", "cog"),
+}
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local RepStorage = game:GetService("ReplicatedStorage")
+local Workspace  = game:GetService("Workspace")
+local player = Players.LocalPlayer
+
+-- =============================================================================
+-- [MAIN TAB - STEAL AVATAR GROUPBOX]
+-- =============================================================================
+local StealAvatarGroup = Tabs.Main:AddLeftGroupbox("Steal Avatar", "user")
+
+-- Avatar Type Dropdown (R6 / R15)
+StealAvatarGroup:AddDropdown("AvatarType", {
+    Text = "Avatar Type",
+    Default = "R6",
+    Values = { "R6", "R15" },
+    Tooltip = "Select the rig type of the target player"
+})
+
+-- Username / Display Name Input
+StealAvatarGroup:AddInput("TargetUser", {
+    Text = "Target User",
+    Default = "",
+    Placeholder = "Type anyone's display/username",
+    Tooltip = "Enter the target player's name or display name"
+})
+
+-- Steal Avatar Button (Input ile)
+StealAvatarGroup:AddButton({
+    Text = "Steal Avatar",
+    Func = function()
+        local plrs = game:GetService("Players")
+        local rs = game:GetService("ReplicatedStorage")
+        local targetName = Options.TargetUser.Value
+        local saveOutfit = Toggles.SaveOutfit and Toggles.SaveOutfit.Value or false
+        local avatarType = Options.AvatarType.Value
+
+        if not targetName or targetName == "" then
+            Library:Notify({ Title = "Error", Description = "Please enter a target username/display name!", Time = 3 })
+            return
+        end
+
+        local rig = avatarType == "R6" and Enum.HumanoidRigType.R6 or Enum.HumanoidRigType.R15
+
+        local guy
+        local searchLower = targetName:lower()
+        for _, p in plrs:GetPlayers() do
+            if p.Name:lower():sub(1, #targetName) == searchLower or
+               p.DisplayName:lower():sub(1, #targetName) == searchLower then
+                guy = p
+                break
+            end
+        end
+
+        if not guy then
+            Library:Notify({ Title = "Error", Description = "Player not found: " .. targetName, Time = 3 })
+            return
+        end
+
+        if not guy.Character or not guy.Character:FindFirstChild("Humanoid") then
+            Library:Notify({ Title = "Error", Description = "Target player has no character or humanoid!", Time = 3 })
+            return
+        end
+
+        local desc = guy.Character.Humanoid:GetAppliedDescription()
+        local wear = {{
+            ["Properties"] = {
+                ["WalkAnimation"] = desc.WalkAnimation, ["MoodAnimation"] = desc.MoodAnimation,
+                ["Face"] = desc.Face, ["ProportionScale"] = desc.ProportionScale,
+                ["ClimbAnimation"] = desc.ClimbAnimation, ["Shirt"] = desc.Shirt,
+                ["FaceAccessory"] = desc.FaceAccessory,
+                ["RightArmColor"] = {r = math.floor(desc.RightArmColor.R * 255), g = math.floor(desc.RightArmColor.G * 255), b = math.floor(desc.RightArmColor.B * 255), IsRGBTable = true},
+                ["HairAccessory"] = desc.HairAccessory, ["RightArm"] = desc.RightArm,
+                ["Head"] = desc.Head, ["FallAnimation"] = desc.FallAnimation,
+                ["TorsoColor"] = {r = math.floor(desc.TorsoColor.R * 255), g = math.floor(desc.TorsoColor.G * 255), b = math.floor(desc.TorsoColor.B * 255), IsRGBTable = true},
+                ["DepthScale"] = desc.DepthScale, ["LeftArm"] = desc.LeftArm,
+                ["HeightScale"] = desc.HeightScale, ["LeftLeg"] = desc.LeftLeg,
+                ["RightLegColor"] = {r = math.floor(desc.RightLegColor.R * 255), g = math.floor(desc.RightLegColor.G * 255), b = math.floor(desc.RightLegColor.B * 255), IsRGBTable = true},
+                ["LeftLegColor"] = {r = math.floor(desc.LeftLegColor.R * 255), g = math.floor(desc.LeftLegColor.G * 255), b = math.floor(desc.LeftLegColor.B * 255), IsRGBTable = true},
+                ["WidthScale"] = desc.WidthScale, ["BodyTypeScale"] = desc.BodyTypeScale,
+                ["RunAnimation"] = desc.RunAnimation,
+                ["LeftArmColor"] = {r = math.floor(desc.LeftArmColor.R * 255), g = math.floor(desc.LeftArmColor.G * 255), b = math.floor(desc.LeftArmColor.B * 255), IsRGBTable = true},
+                ["Pants"] = desc.Pants, ["WaistAccessory"] = desc.WaistAccessory,
+                ["LayeredAccessories"] = {}, ["AccessoryRefinements"] = {},
+                ["ShouldersAccessory"] = desc.ShouldersAccessory, ["NeckAccessory"] = desc.NeckAccessory,
+                ["HatAccessory"] = desc.HatAccessory, ["FrontAccessory"] = desc.FrontAccessory,
+                ["SwimAnimation"] = desc.SwimAnimation,
+                ["HeadColor"] = {r = math.floor(desc.HeadColor.R * 255), g = math.floor(desc.HeadColor.G * 255), b = math.floor(desc.HeadColor.B * 255), IsRGBTable = true},
+                ["BackAccessory"] = desc.BackAccessory, ["IdleAnimation"] = desc.IdleAnimation,
+                ["Torso"] = desc.Torso, ["HeadScale"] = desc.HeadScale,
+                ["JumpAnimation"] = desc.JumpAnimation, ["GraphicTShirt"] = desc.GraphicTShirt,
+                ["RightLeg"] = desc.RightLeg
+            },
+            ["Action"] = "CreateAndWearHumanoidDescription",
+            ["RigType"] = rig
+        }}
+
+        rs.CatalogGuiRemote:InvokeServer(unpack(wear))
+
+        if saveOutfit then
+            local outfitName = "Stolen from " .. guy.DisplayName .. " (@" .. guy.Name .. ")"
+            rs.Events.SavedOutfitsRemote:InvokeServer({ OutfitName = outfitName, Configs = {}, Action = "CreateNewOutfit" })
+            Library:Notify({ Title = "Success", Description = "Avatar stolen and saved as '" .. outfitName .. "'!", Time = 3 })
+        else
+            Library:Notify({ Title = "Success", Description = "Avatar stolen from " .. guy.DisplayName .. " (@" .. guy.Name .. ")!", Time = 3 })
+        end
+    end,
+    Tooltip = "Steal avatar using the username/display name input"
+})
+
+-- Divider
+StealAvatarGroup:AddDivider()
+
+-- Player List'i başlangıçta doldur
+local function GetPlayerList()
+    local players = {}
+    for _, p in Players:GetPlayers() do
+        if p ~= player then
+            table.insert(players, p.DisplayName .. " (@" .. p.Name .. ")")
+        end
+    end
+    if #players == 0 then
+        players = { "No players in server" }
+    end
+    return players
+end
+
+-- Player List Dropdown (dolu oluştur)
+local PlayerDropdown = StealAvatarGroup:AddDropdown("PlayerList", {
+    Text = "Player List",
+    Default = "",
+    Values = GetPlayerList(),
+    Tooltip = "Select a player from the server"
+})
+
+-- Refresh Player List fonksiyonu
+local function RefreshPlayerList()
+    local newList = GetPlayerList()
+    Options.PlayerList.Values = newList
+    Options.PlayerList:SetValue("")
+end
+
+-- Refresh butonu
+StealAvatarGroup:AddButton({
+    Text = "Refresh Player List",
+    Func = function()
+        RefreshPlayerList()
+        Library:Notify({
+            Title = "Refreshed",
+            Description = "Player list has been updated!",
+            Time = 2
+        })
+    end,
+    Tooltip = "Refresh the server player list"
+})
+
+-- Steal Selected Player's Avatar Butonu
+StealAvatarGroup:AddButton({
+    Text = "Steal Selected Player's Avatar",
+    Func = function()
+        local rs = game:GetService("ReplicatedStorage")
+        local selectedPlayer = Options.PlayerList.Value
+        local saveOutfit = Toggles.SaveOutfit and Toggles.SaveOutfit.Value or false
+        local avatarType = Options.AvatarType.Value
+
+        if not selectedPlayer or selectedPlayer == "" or selectedPlayer == "No players in server" then
+            Library:Notify({ Title = "Error", Description = "Please select a valid player from the list!", Time = 3 })
+            return
+        end
+
+        local targetName = selectedPlayer:match("%(@(.+)%)$")
+        if not targetName then
+            Library:Notify({ Title = "Error", Description = "Invalid player selection!", Time = 3 })
+            return
+        end
+
+        local rig = avatarType == "R6" and Enum.HumanoidRigType.R6 or Enum.HumanoidRigType.R15
+        local guy = Players:FindFirstChild(targetName)
+
+        if not guy then
+            Library:Notify({ Title = "Error", Description = "Player not found: " .. targetName, Time = 3 })
+            return
+        end
+
+        if not guy.Character or not guy.Character:FindFirstChild("Humanoid") then
+            Library:Notify({ Title = "Error", Description = "Target player has no character or humanoid!", Time = 3 })
+            return
+        end
+
+        local desc = guy.Character.Humanoid:GetAppliedDescription()
+        local wear = {{
+            ["Properties"] = {
+                ["WalkAnimation"] = desc.WalkAnimation, ["MoodAnimation"] = desc.MoodAnimation,
+                ["Face"] = desc.Face, ["ProportionScale"] = desc.ProportionScale,
+                ["ClimbAnimation"] = desc.ClimbAnimation, ["Shirt"] = desc.Shirt,
+                ["FaceAccessory"] = desc.FaceAccessory,
+                ["RightArmColor"] = {r = math.floor(desc.RightArmColor.R * 255), g = math.floor(desc.RightArmColor.G * 255), b = math.floor(desc.RightArmColor.B * 255), IsRGBTable = true},
+                ["HairAccessory"] = desc.HairAccessory, ["RightArm"] = desc.RightArm,
+                ["Head"] = desc.Head, ["FallAnimation"] = desc.FallAnimation,
+                ["TorsoColor"] = {r = math.floor(desc.TorsoColor.R * 255), g = math.floor(desc.TorsoColor.G * 255), b = math.floor(desc.TorsoColor.B * 255), IsRGBTable = true},
+                ["DepthScale"] = desc.DepthScale, ["LeftArm"] = desc.LeftArm,
+                ["HeightScale"] = desc.HeightScale, ["LeftLeg"] = desc.LeftLeg,
+                ["RightLegColor"] = {r = math.floor(desc.RightLegColor.R * 255), g = math.floor(desc.RightLegColor.G * 255), b = math.floor(desc.RightLegColor.B * 255), IsRGBTable = true},
+                ["LeftLegColor"] = {r = math.floor(desc.LeftLegColor.R * 255), g = math.floor(desc.LeftLegColor.G * 255), b = math.floor(desc.LeftLegColor.B * 255), IsRGBTable = true},
+                ["WidthScale"] = desc.WidthScale, ["BodyTypeScale"] = desc.BodyTypeScale,
+                ["RunAnimation"] = desc.RunAnimation,
+                ["LeftArmColor"] = {r = math.floor(desc.LeftArmColor.R * 255), g = math.floor(desc.LeftArmColor.G * 255), b = math.floor(desc.LeftArmColor.B * 255), IsRGBTable = true},
+                ["Pants"] = desc.Pants, ["WaistAccessory"] = desc.WaistAccessory,
+                ["LayeredAccessories"] = {}, ["AccessoryRefinements"] = {},
+                ["ShouldersAccessory"] = desc.ShouldersAccessory, ["NeckAccessory"] = desc.NeckAccessory,
+                ["HatAccessory"] = desc.HatAccessory, ["FrontAccessory"] = desc.FrontAccessory,
+                ["SwimAnimation"] = desc.SwimAnimation,
+                ["HeadColor"] = {r = math.floor(desc.HeadColor.R * 255), g = math.floor(desc.HeadColor.G * 255), b = math.floor(desc.HeadColor.B * 255), IsRGBTable = true},
+                ["BackAccessory"] = desc.BackAccessory, ["IdleAnimation"] = desc.IdleAnimation,
+                ["Torso"] = desc.Torso, ["HeadScale"] = desc.HeadScale,
+                ["JumpAnimation"] = desc.JumpAnimation, ["GraphicTShirt"] = desc.GraphicTShirt,
+                ["RightLeg"] = desc.RightLeg
+            },
+            ["Action"] = "CreateAndWearHumanoidDescription",
+            ["RigType"] = rig
+        }}
+
+        rs.CatalogGuiRemote:InvokeServer(unpack(wear))
+
+        if saveOutfit then
+            local outfitName = "Stolen from " .. guy.DisplayName .. " (@" .. guy.Name .. ")"
+            rs.Events.SavedOutfitsRemote:InvokeServer({ OutfitName = outfitName, Configs = {}, Action = "CreateNewOutfit" })
+            Library:Notify({ Title = "Success", Description = "Avatar stolen and saved as '" .. outfitName .. "'!", Time = 3 })
+        else
+            Library:Notify({ Title = "Success", Description = "Avatar stolen from " .. guy.DisplayName .. " (@" .. guy.Name .. ")!", Time = 3 })
+        end
+    end,
+    Tooltip = "Steal the selected player's avatar from the dropdown list"
+})
+
+-- Divider
+StealAvatarGroup:AddDivider()
+
+-- Save Everyone's Outfit Butonu
+StealAvatarGroup:AddButton({
+    Text = "Save Everyone's Outfit",
+    Func = function()
+        local rs = game:GetService("ReplicatedStorage")
+        local avatarType = Options.AvatarType.Value
+        local rig = avatarType == "R6" and Enum.HumanoidRigType.R6 or Enum.HumanoidRigType.R15
+        
+        local savedCount = 0
+        local failedPlayers = {}
+        local allPlayers = {}
+        
+        -- Önce tüm oyuncuları topla (kendin hariç)
+        for _, guy in Players:GetPlayers() do
+            if guy ~= player then
+                table.insert(allPlayers, guy)
+            end
+        end
+        
+        if #allPlayers == 0 then
+            Library:Notify({
+                Title = "Info",
+                Description = "No other players in the server!",
+                Time = 3
+            })
+            return
+        end
+        
+        Library:Notify({
+            Title = "Saving Outfits",
+            Description = "Saving " .. #allPlayers .. " player outfits... Please wait!",
+            Time = 3
+        })
+        
+        -- Her oyuncuyu sırayla işle
+        for i, guy in ipairs(allPlayers) do
+            if guy.Character and guy.Character:FindFirstChild("Humanoid") then
+                local success = pcall(function()
+                    -- Avatarı giy
+                    local desc = guy.Character.Humanoid:GetAppliedDescription()
+                    local wear = {{
+                        ["Properties"] = {
+                            ["WalkAnimation"] = desc.WalkAnimation, ["MoodAnimation"] = desc.MoodAnimation,
+                            ["Face"] = desc.Face, ["ProportionScale"] = desc.ProportionScale,
+                            ["ClimbAnimation"] = desc.ClimbAnimation, ["Shirt"] = desc.Shirt,
+                            ["FaceAccessory"] = desc.FaceAccessory,
+                            ["RightArmColor"] = {r = math.floor(desc.RightArmColor.R * 255), g = math.floor(desc.RightArmColor.G * 255), b = math.floor(desc.RightArmColor.B * 255), IsRGBTable = true},
+                            ["HairAccessory"] = desc.HairAccessory, ["RightArm"] = desc.RightArm,
+                            ["Head"] = desc.Head, ["FallAnimation"] = desc.FallAnimation,
+                            ["TorsoColor"] = {r = math.floor(desc.TorsoColor.R * 255), g = math.floor(desc.TorsoColor.G * 255), b = math.floor(desc.TorsoColor.B * 255), IsRGBTable = true},
+                            ["DepthScale"] = desc.DepthScale, ["LeftArm"] = desc.LeftArm,
+                            ["HeightScale"] = desc.HeightScale, ["LeftLeg"] = desc.LeftLeg,
+                            ["RightLegColor"] = {r = math.floor(desc.RightLegColor.R * 255), g = math.floor(desc.RightLegColor.G * 255), b = math.floor(desc.RightLegColor.B * 255), IsRGBTable = true},
+                            ["LeftLegColor"] = {r = math.floor(desc.LeftLegColor.R * 255), g = math.floor(desc.LeftLegColor.G * 255), b = math.floor(desc.LeftLegColor.B * 255), IsRGBTable = true},
+                            ["WidthScale"] = desc.WidthScale, ["BodyTypeScale"] = desc.BodyTypeScale,
+                            ["RunAnimation"] = desc.RunAnimation,
+                            ["LeftArmColor"] = {r = math.floor(desc.LeftArmColor.R * 255), g = math.floor(desc.LeftArmColor.G * 255), b = math.floor(desc.LeftArmColor.B * 255), IsRGBTable = true},
+                            ["Pants"] = desc.Pants, ["WaistAccessory"] = desc.WaistAccessory,
+                            ["LayeredAccessories"] = {}, ["AccessoryRefinements"] = {},
+                            ["ShouldersAccessory"] = desc.ShouldersAccessory, ["NeckAccessory"] = desc.NeckAccessory,
+                            ["HatAccessory"] = desc.HatAccessory, ["FrontAccessory"] = desc.FrontAccessory,
+                            ["SwimAnimation"] = desc.SwimAnimation,
+                            ["HeadColor"] = {r = math.floor(desc.HeadColor.R * 255), g = math.floor(desc.HeadColor.G * 255), b = math.floor(desc.HeadColor.B * 255), IsRGBTable = true},
+                            ["BackAccessory"] = desc.BackAccessory, ["IdleAnimation"] = desc.IdleAnimation,
+                            ["Torso"] = desc.Torso, ["HeadScale"] = desc.HeadScale,
+                            ["JumpAnimation"] = desc.JumpAnimation, ["GraphicTShirt"] = desc.GraphicTShirt,
+                            ["RightLeg"] = desc.RightLeg
+                        },
+                        ["Action"] = "CreateAndWearHumanoidDescription",
+                        ["RigType"] = rig
+                    }}
+                    
+                    rs.CatalogGuiRemote:InvokeServer(unpack(wear))
+                    
+                    -- Outfit olarak kaydet
+                    local outfitName = "Stolen from " .. guy.DisplayName .. " (@" .. guy.Name .. ")"
+                    rs.Events.SavedOutfitsRemote:InvokeServer({ 
+                        OutfitName = outfitName, 
+                        Configs = {}, 
+                        Action = "CreateNewOutfit" 
+                    })
+                    
+                    savedCount = savedCount + 1
+                end)
+                
+                if not success then
+                    table.insert(failedPlayers, guy.DisplayName .. " (@" .. guy.Name .. ")")
+                end
+            else
+                table.insert(failedPlayers, guy.DisplayName .. " (@" .. guy.Name .. ")")
+            end
+            
+            -- Son oyuncu değilse 0.5 saniye bekle
+            if i < #allPlayers then
+                task.wait(0.5)
+            end
+        end
+        
+        -- Sonuç bildirimi
+        if savedCount > 0 then
+            Library:Notify({
+                Title = "Success",
+                Description = "Saved " .. savedCount .. "/" .. #allPlayers .. " player outfits!",
+                Time = 4
+            })
+        end
+        
+        if #failedPlayers > 0 then
+            Library:Notify({
+                Title = "Warning",
+                Description = "Failed: " .. table.concat(failedPlayers, ", "),
+                Time = 5
+            })
+        end
+    end,
+    Tooltip = "Save everyone's outfit in the server (except yourself)"
+})
+
+-- Save Outfit Toggle
+StealAvatarGroup:AddToggle("SaveOutfit", {
+    Text = "Save Outfit",
+    Default = false,
+    Tooltip = "If enabled, saves the stolen outfit as 'Stolen from DisplayName (@Username)'"
+})
+
+-- Save Currently Wearing Avatar Button
+StealAvatarGroup:AddButton({
+    Text = "Save Currently Wearing Avatar",
+    Func = function()
+        local rs = game:GetService("ReplicatedStorage")
+        
+        if not player.Character or not player.Character:FindFirstChild("Humanoid") then
+            Library:Notify({
+                Title = "Error",
+                Description = "You don't have a character loaded!",
+                Time = 3
+            })
+            return
+        end
+        
+        pcall(function()
+            rs.Events.SavedOutfitsRemote:InvokeServer({
+                OutfitName = "Saved-Fit",
+                Configs = {},
+                Action = "CreateNewOutfit"
+            })
+            
+            Library:Notify({
+                Title = "Success",
+                Description = "Current outfit saved as 'Saved-Fit'!",
+                Time = 3
+            })
+        end)
+    end,
+    Tooltip = "Save your currently wearing avatar as 'Saved-Fit'"
+})
+
+-- Reset to Roblox Avatar Button
+StealAvatarGroup:AddButton({
+    Text = "Reset to Roblox Avatar",
+    Func = function()
+        pcall(function()
+            -- Karakteri tamamen sıfırla, oyun kendi orijinal avatarını yüklesin
+            if player.Character then
+                player.Character:BreakJoints()
+            end
+            
+            Library:Notify({
+                Title = "Success",
+                Description = "Respawning with your original Roblox avatar!",
+                Time = 3
+            })
+        end)
+    end,
+    Tooltip = "Respawn to load your original Roblox avatar"
+})
+
+-- =============================================================================
+-- [MAIN TAB - SERVER GROUPBOX (RIGHT SIDE)]
+-- =============================================================================
+local UtilitiesGroup = Tabs.Main:AddRightGroupbox("Utilities", "wrench")
+
+-- Switch to R6 Button
+UtilitiesGroup:AddButton({
+    Text = "Switch to R6",
+    Func = function()
+        -- Yeni chat sistemi için
+        pcall(function()
+            local chatService = game:GetService("TextChatService")
+            local channel = chatService.TextChannels.RBXGeneral
+            if channel then
+                channel:SendAsync("/r6")
+            end
+        end)
+        
+        -- Eski chat sistemi için (fallback)
+        pcall(function()
+            local args = {
+                [1] = "/r6",
+                [2] = "All"
+            }
+            game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack(args))
+        end)
+        
+        Library:Notify({
+            Title = "Server",
+            Description = "Sent /r6 to chat!",
+            Time = 2
+        })
+    end,
+    Tooltip = "Sends /r6 command to chat to switch your avatar to R6"
+})
+
+-- Switch to R15 Button
+UtilitiesGroup:AddButton({
+    Text = "Switch to R15",
+    Func = function()
+        -- Yeni chat sistemi için
+        pcall(function()
+            local chatService = game:GetService("TextChatService")
+            local channel = chatService.TextChannels.RBXGeneral
+            if channel then
+                channel:SendAsync("/r15")
+            end
+        end)
+        
+        -- Eski chat sistemi için (fallback)
+        pcall(function()
+            local args = {
+                [1] = "/r15",
+                [2] = "All"
+            }
+            game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack(args))
+        end)
+        
+        Library:Notify({
+            Title = "Server",
+            Description = "Sent /r15 to chat!",
+            Time = 2
+        })
+    end,
+    Tooltip = "Sends /r15 command to chat to switch your avatar to R15"
+})
+
+-- Divider
+UtilitiesGroup:AddDivider()
+
+-- Rejoin Server Button
+UtilitiesGroup:AddButton({
+    Text = "Rejoin Server",
+    Func = function()
+        local teleportService = game:GetService("TeleportService")
+        local placeId = game.PlaceId
+        local jobId = game.JobId
+        
+        Library:Notify({
+            Title = "Server",
+            Description = "Rejoining same server...",
+            Time = 2
+        })
+        
+        task.wait(0.5)
+        
+        -- Aynı sunucuya tekrar katıl
+        teleportService:TeleportToPlaceInstance(placeId, jobId, player)
+    end,
+    Tooltip = "Rejoin the same server"
+})
+
+-- Server Hop Button (Farklı sunuculara atar, aynı sunucuya atmaz)
+UtilitiesGroup:AddButton({
+    Text = "Server Hop",
+    Func = function()
+        local PlaceID = game.PlaceId
+        local AllIDs = {}
+        local foundAnything = ""
+        local actualHour = os.date("!*t").hour
+        
+        local File = pcall(function()
+            AllIDs = game:GetService('HttpService'):JSONDecode(readfile("NotSameServers.json"))
+        end)
+        
+        if not File then
+            table.insert(AllIDs, actualHour)
+            writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
+        end
+        
+        local function TPReturner()
+            local Site
+            if foundAnything == "" then
+                Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+            else
+                Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
+            end
+        
+            local ID = ""
+            if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+                foundAnything = Site.nextPageCursor
+            end
+        
+            local num = 0
+            for i, v in pairs(Site.data) do
+                local Possible = true
+                ID = tostring(v.id)
+                if tonumber(v.maxPlayers) > tonumber(v.playing) then
+                    for _, Existing in pairs(AllIDs) do
+                        if num ~= 0 then
+                            if ID == tostring(Existing) then
+                                Possible = false
+                            end
+                        else
+                            if tonumber(actualHour) ~= tonumber(Existing) then
+                                local delFile = pcall(function()
+                                    delfile("NotSameServers.json")
+                                    AllIDs = {}
+                                    table.insert(AllIDs, actualHour)
+                                end)
+                            end
+                        end
+                        num = num + 1
+                    end
+                    if Possible == true then
+                        table.insert(AllIDs, ID)
+                        wait()
+                        pcall(function()
+                            writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
+                            wait()
+                            game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ID, game.Players.LocalPlayer)
+                        end)
+                        wait(4)
+                    end
+                end
+            end
+        end
+        
+        Library:Notify({
+            Title = "Server",
+            Description = "Searching for a different server...",
+            Time = 2
+        })
+        
+        -- Server hop başlat
+        task.spawn(function()
+            while wait() do
+                pcall(function()
+                    TPReturner()
+                    if foundAnything ~= "" then
+                        TPReturner()
+                    end
+                end)
+            end
+        end)
+    end,
+    Tooltip = "Join a different server (won't rejoin the same one)"
+})
+
+-- Steal Avatar Groupbox'a eklenecek toggle ve click/hover detection kodu:
+
+-- Click to Steal Toggle
+StealAvatarGroup:AddToggle("ClickToSteal", {
+    Text = "Click to Steal",
+    Default = false,
+    Tooltip = "Hover over a player to highlight them, click to steal their avatar",
+    Callback = function(Value)
+        if Value then
+            Library:Notify({
+                Title = "Click to Steal",
+                Description = "Hover over a player to highlight, click to steal their avatar!",
+                Time = 3
+            })
+        end
+    end,
+})
+
+-- Highlight ve Click detection
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local clickConnection
+local highlightConnection
+local currentHighlight
+
+Toggles.ClickToSteal:OnChanged(function(Value)
+    if Value then
+        -- Toggle açıldı, hover ve click detection'ı başlat
+        
+        -- Mouse ile üzerine gelinen oyuncuyu highlight yap
+        highlightConnection = RunService.RenderStepped:Connect(function()
+            local mouse = player:GetMouse()
+            local target = mouse.Target
+            
+            -- Önce eski highlight'ı temizle
+            if currentHighlight then
+                currentHighlight:Destroy()
+                currentHighlight = nil
+            end
+            
+            if target then
+                local character = target:FindFirstAncestorOfClass("Model")
+                if character then
+                    local targetPlayer = Players:GetPlayerFromCharacter(character)
+                    
+                    if targetPlayer and targetPlayer ~= player and character:FindFirstChild("Humanoid") then
+                        -- Yeni highlight oluştur
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "StealHighlight"
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.FillTransparency = 0.5
+                        highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                        highlight.OutlineTransparency = 0
+                        highlight.Parent = character
+                        currentHighlight = highlight
+                        
+                        -- Tooltip göster
+                        mouse.Icon = "rbxasset://SystemCursors/Cross"
+                    end
+                end
+            end
+            
+            -- Mouse icon'unu sıfırla
+            if not currentHighlight then
+                mouse.Icon = ""
+            end
+        end)
+        
+        -- Click detection
+        clickConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                local mouse = player:GetMouse()
+                local target = mouse.Target
+                
+                if target then
+                    local character = target:FindFirstAncestorOfClass("Model")
+                    if character then
+                        local targetPlayer = Players:GetPlayerFromCharacter(character)
+                        
+                        if targetPlayer and targetPlayer ~= player and character:FindFirstChild("Humanoid") then
+                            -- Avatar tipini dropdown'dan al
+                            local avatarType = Options.AvatarType.Value
+                            local rig = avatarType == "R6" and Enum.HumanoidRigType.R6 or Enum.HumanoidRigType.R15
+                            local saveOutfit = Toggles.SaveOutfit and Toggles.SaveOutfit.Value or false
+                            local rs = game:GetService("ReplicatedStorage")
+                            
+                            pcall(function()
+                                local desc = character.Humanoid:GetAppliedDescription()
+                                local wear = {{
+                                    ["Properties"] = {
+                                        ["WalkAnimation"] = desc.WalkAnimation, ["MoodAnimation"] = desc.MoodAnimation,
+                                        ["Face"] = desc.Face, ["ProportionScale"] = desc.ProportionScale,
+                                        ["ClimbAnimation"] = desc.ClimbAnimation, ["Shirt"] = desc.Shirt,
+                                        ["FaceAccessory"] = desc.FaceAccessory,
+                                        ["RightArmColor"] = {r = math.floor(desc.RightArmColor.R * 255), g = math.floor(desc.RightArmColor.G * 255), b = math.floor(desc.RightArmColor.B * 255), IsRGBTable = true},
+                                        ["HairAccessory"] = desc.HairAccessory, ["RightArm"] = desc.RightArm,
+                                        ["Head"] = desc.Head, ["FallAnimation"] = desc.FallAnimation,
+                                        ["TorsoColor"] = {r = math.floor(desc.TorsoColor.R * 255), g = math.floor(desc.TorsoColor.G * 255), b = math.floor(desc.TorsoColor.B * 255), IsRGBTable = true},
+                                        ["DepthScale"] = desc.DepthScale, ["LeftArm"] = desc.LeftArm,
+                                        ["HeightScale"] = desc.HeightScale, ["LeftLeg"] = desc.LeftLeg,
+                                        ["RightLegColor"] = {r = math.floor(desc.RightLegColor.R * 255), g = math.floor(desc.RightLegColor.G * 255), b = math.floor(desc.RightLegColor.B * 255), IsRGBTable = true},
+                                        ["LeftLegColor"] = {r = math.floor(desc.LeftLegColor.R * 255), g = math.floor(desc.LeftLegColor.G * 255), b = math.floor(desc.LeftLegColor.B * 255), IsRGBTable = true},
+                                        ["WidthScale"] = desc.WidthScale, ["BodyTypeScale"] = desc.BodyTypeScale,
+                                        ["RunAnimation"] = desc.RunAnimation,
+                                        ["LeftArmColor"] = {r = math.floor(desc.LeftArmColor.R * 255), g = math.floor(desc.LeftArmColor.G * 255), b = math.floor(desc.LeftArmColor.B * 255), IsRGBTable = true},
+                                        ["Pants"] = desc.Pants, ["WaistAccessory"] = desc.WaistAccessory,
+                                        ["LayeredAccessories"] = {}, ["AccessoryRefinements"] = {},
+                                        ["ShouldersAccessory"] = desc.ShouldersAccessory, ["NeckAccessory"] = desc.NeckAccessory,
+                                        ["HatAccessory"] = desc.HatAccessory, ["FrontAccessory"] = desc.FrontAccessory,
+                                        ["SwimAnimation"] = desc.SwimAnimation,
+                                        ["HeadColor"] = {r = math.floor(desc.HeadColor.R * 255), g = math.floor(desc.HeadColor.G * 255), b = math.floor(desc.HeadColor.B * 255), IsRGBTable = true},
+                                        ["BackAccessory"] = desc.BackAccessory, ["IdleAnimation"] = desc.IdleAnimation,
+                                        ["Torso"] = desc.Torso, ["HeadScale"] = desc.HeadScale,
+                                        ["JumpAnimation"] = desc.JumpAnimation, ["GraphicTShirt"] = desc.GraphicTShirt,
+                                        ["RightLeg"] = desc.RightLeg
+                                    },
+                                    ["Action"] = "CreateAndWearHumanoidDescription",
+                                    ["RigType"] = rig
+                                }}
+                                
+                                rs.CatalogGuiRemote:InvokeServer(unpack(wear))
+                                
+                                if saveOutfit then
+                                    local outfitName = "Stolen from " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ")"
+                                    rs.Events.SavedOutfitsRemote:InvokeServer({ OutfitName = outfitName, Configs = {}, Action = "CreateNewOutfit" })
+                                end
+                                
+                                Library:Notify({
+                                    Title = "Stolen!",
+                                    Description = "Avatar stolen from " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ")!",
+                                    Time = 2
+                                })
+                            end)
+                        end
+                    end
+                end
+            end
+        end)
+    else
+        -- Toggle kapandı, tüm detection'ları durdur
+        if clickConnection then
+            clickConnection:Disconnect()
+            clickConnection = nil
+        end
+        
+        if highlightConnection then
+            highlightConnection:Disconnect()
+            highlightConnection = nil
+        end
+        
+        if currentHighlight then
+            currentHighlight:Destroy()
+            currentHighlight = nil
+        end
+        
+        -- Mouse icon'unu sıfırla
+        pcall(function()
+            player:GetMouse().Icon = ""
+        end)
+    end
+end)
+
+-- =============================================================================
+-- [VISUAL TAB - FOV SLIDER & TOGGLE]
+-- =============================================================================
+local VisualGroup = Tabs.Visual:AddLeftGroupbox("FOV", "aperture")
+
+-- FOV Slider (30-120)
+VisualGroup:AddSlider("FOVSlider", {
+	Text = "Field of View (FOV)",
+	Default = 70,
+	Min = 30,
+	Max = 120,
+	Rounding = 0,
+	Tooltip = "Adjusts your camera's field of view",
+	Callback = function(Value)
+		print("[FOV] Changed to:", Value)
+		
+		-- Apply FOV change if toggle is enabled
+		if Toggles.FOVToggle and Toggles.FOVToggle.Value then
+			game:GetService("Workspace").CurrentCamera.FieldOfView = Value
+		end
+	end,
+})
+
+-- FOV Toggle
+VisualGroup:AddToggle("FOVToggle", {
+	Text = "FOV",
+	Default = false,
+	Tooltip = "Enable/Disable custom FOV",
+	Callback = function(Value)
+		print("[FOV Toggle] State:", Value)
+		
+		if Value then
+			-- Apply current slider value
+			local currentFOV = Options.FOVSlider.Value
+			game:GetService("Workspace").CurrentCamera.FieldOfView = currentFOV
+		else
+			-- Reset to default 70 when toggled off
+			game:GetService("Workspace").CurrentCamera.FieldOfView = 70
+		end
+	end,
+})
+
+-- =============================================================================
+-- [CHANGELOG]
+-- =============================================================================
+local ChangelogTab = Window:AddKeyTab("Changelog", "file-text")
+
+ChangelogTab:AddLabel({
+    Text = "Some features cannot be listed here, please join the <font color='rgb(114,137,218)'>Discord</font> server!",
+    DoesWrap = true,
+    Size = 25,
+})
+
+ChangelogTab:AddToggle("CreateLogsToggle", {
+    Text = "Create Logs",
+    Default = false,
+    Tooltip = "Toggles log creation",
+    Callback = function(Value)
+        print("Create Logs is now:", Value)
+    end,
+})
+
+ChangelogTab:AddDivider()
+
+local JoinDiscordButton = ChangelogTab:AddButton({
+    Text = "Join Discord",
+    Func = function()
+        if open_url then
+            open_url("https://discord.gg/PkrGuRqNx5")
+        elseif openurl then
+            openurl("https://discord.gg/PkrGuRqNx5")
+        else
+            setclipboard("https://discord.gg/PkrGuRqNx5")
+            Library:Notify({
+                Title = "Link Copied",
+                Description = "Your executor doesn't support opening URLs, link copied instead.",
+                Time = 3,
+            })
+        end
+    end,
+    Tooltip = "Opens the Discord invite directly",
+})
+
+JoinDiscordButton:AddButton({
+    Text = "Copy Link",
+    Func = function()
+        setclipboard("https://discord.gg/PkrGuRqNx5")
+        Library:Notify({
+            Title = "Copied",
+            Description = "Discord link copied to clipboard!",
+            Time = 3,
+        })
+    end,
+    DoubleClick = false,
+})
+
+ChangelogTab:AddLabel({ Text = " ", DoesWrap = true })  -- boşluk
+
+ChangelogTab:AddLabel({
+    Text = "<font color='rgb(255,215,0)' size='35'>Version 1.0.0 — 15.07.2026</font>",
+    DoesWrap = true
+})
+
+-- Initial Release
+ChangelogTab:AddLabel({ Text = "  • Initial Release", DoesWrap = true, Size = 25, })
+
+ChangelogTab:AddLabel({ Text = " ", DoesWrap = true })  -- boşluk
+
+-- =============================================================================
+-- [CREDITS]
+-- =============================================================================
+local CreditsTab = Window:AddTab("Credits", "scroll-text")
+
+-- Left Groups
+local OwnersGroup = CreditsTab:AddLeftGroupbox("Owners", "crown")
+
+OwnersGroup:AddLabel({
+    Text = "<font color='rgb(255,105,180)' size='22'>Xecel - </font>",
+    DoesWrap = true
+})
+OwnersGroup:AddLabel({
+    Text = "(Owner Of Xecel Scripts)",
+    DoesWrap = true,
+    Size = 14
+})
+
+local DevelopersGroup = CreditsTab:AddLeftGroupbox("Developers", "brain-cog")
+
+DevelopersGroup:AddLabel({
+    Text = "<font color='rgb(0,255,0)' size='18'>Null1787 - </font>",
+    DoesWrap = true
+})
+DevelopersGroup:AddLabel({
+    Text = "(Helped with Find Who Slapped)",
+    DoesWrap = true,
+    Size = 14
+})
+
+DevelopersGroup:AddLabel({
+    Text = "<font color='rgb(255,255,0)' size='18'>bensemet - </font>",
+    DoesWrap = true
+})
+DevelopersGroup:AddLabel({
+    Text = "(Helped with Universal Script)",
+    DoesWrap = true,
+    Size = 14
+})
+
+local TestersGroup = CreditsTab:AddLeftGroupbox("Testers", "flask-round")
+
+TestersGroup:AddLabel({
+    Text = "<font color='rgb(0,255,0)' size='18'>Null1787 - </font>",
+    DoesWrap = true
+})
+TestersGroup:AddLabel({
+    Text = "(Tester Of All Scripts)",
+    DoesWrap = true,
+    Size = 14
+})
+
+TestersGroup:AddLabel({
+    Text = "<font color='rgb(255,255,0)' size='18'>bensemet - </font>",
+    DoesWrap = true
+})
+TestersGroup:AddLabel({
+    Text = "(Tester Of All Scripts)",
+    DoesWrap = true,
+    Size = 14
+})
+
+-- Right Groups
+local ContributorsGroup = CreditsTab:AddRightGroupbox("Contributors", "notepad-text")
+
+ContributorsGroup:AddLabel({
+    Text = "<font color='rgb(0,255,0)' size='18'>Null1787 - </font>",
+    DoesWrap = true
+})
+
+ContributorsGroup:AddLabel({
+    Text = "<font color='rgb(255,255,0)' size='18'>bensemet - </font>",
+    DoesWrap = true
+})
+
+ContributorsGroup:AddLabel({
+    Text = "<font color='rgb(66,135,245)' size='18'>deividcomsono - </font>",
+    DoesWrap = true
+})
+ContributorsGroup:AddLabel({
+    Text = "(For the UI Library)",
+    DoesWrap = true,
+    Size = 14
+})
+
+ContributorsGroup:AddLabel({
+    Text = "<font color='rgb(255,165,0)' size='18'>You - </font>",
+    DoesWrap = true
+})
+ContributorsGroup:AddLabel({
+    Text = "(For using my script)",
+    DoesWrap = true,
+    Size = 14
+})
+
+local DiscordGroup = CreditsTab:AddRightGroupbox("Discord Server", "message-circle")
+
+DiscordGroup:AddLabel({
+    Text = "Join our <font color='rgb(114,137,218)'>Discord</font> server for more content",
+    DoesWrap = true,
+    Size = 14
+})
+
+DiscordGroup:AddToggle("CreateLogsToggle", {
+    Text = "Create Logs",
+    Default = false,
+    Tooltip = "Toggles log creation",
+    Callback = function(Value)
+        print("Create Logs is now:", Value)
+    end,
+})
+
+DiscordGroup:AddDivider()
+
+local JoinDiscordButton = DiscordGroup:AddButton({
+    Text = "Join Discord",
+    Func = function()
+        if open_url then
+            open_url("https://discord.gg/PkrGuRqNx5")
+        elseif openurl then
+            openurl("https://discord.gg/PkrGuRqNx5")
+        else
+            setclipboard("https://discord.gg/PkrGuRqNx5")
+            Library:Notify({
+                Title = "Link Copied",
+                Description = "Your executor doesn't support opening URLs, link copied instead.",
+                Time = 3,
+            })
+        end
+    end,
+    Tooltip = "Opens the Discord invite directly",
+})
+
+JoinDiscordButton:AddButton({
+    Text = "Copy Link",
+    Func = function()
+        setclipboard("https://discord.gg/PkrGuRqNx5")
+        Library:Notify({
+            Title = "Copied",
+            Description = "Discord link copied to clipboard!",
+            Time = 3,
+        })
+    end,
+    DoubleClick = false,
+})
+
+-- UI Settings
+local SettingsTabBox = Tabs["UI Settings"]:AddRightTabbox("Settings")
+
+--// UI
+local UITab = SettingsTabBox:AddTab("UI", "monitor")
+
+UITab:AddDropdown("DPIDropdown", {
+    Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
+    Default = "100%",
+    Text = "DPI Scale",
+
+    Callback = function(Value)
+        Value = Value:gsub("%%", "")
+        Library:SetDPIScale(tonumber(Value))
+    end,
+})
+
+UITab:AddLabel("Menu Bind")
+    :AddKeyPicker("MenuKeybind", {
+        Default = "RightControl",
+        NoUI = true,
+        Text = "Menu Keybind",
+    })
+
+UITab:AddSlider("UICornerSlider", {
+	Text = "Corner Radius",
+	Default = Library.CornerRadius,
+	Min = 0,
+	Max = 20,
+	Rounding = 0,
+	Callback = function(Value)
+		Window:SetCornerRadius(Value)
+	end,
+})
+
+--// Notify
+local NotifyTab = SettingsTabBox:AddTab("Notify", "bell")
+
+NotifyTab:AddDropdown("NotificationSide", {
+    Values = { "Left", "Right" },
+    Default = "Right",
+    Text = "Notification Side",
+
+    Callback = function(Value)
+        Library:SetNotifySide(Value)
+    end,
+})
+
+NotifyTab:AddToggle("NotificationSound", {
+    Text = "Notification Sound",
+    Default = true,
+    Callback = function(Value)
+        -- Notification sound enable/disable
+    end,
+})
+
+NotifyTab:AddSlider("NotificationVolume", {
+    Text = "Notification Volume",
+    Default = 5,
+    Min = 1,
+    Max = 10,
+    Rounding = 0,
+
+    Callback = function(Value)
+        -- Volume
+    end,
+})
+
+NotifyTab:AddInput("NotificationSoundId", {
+    Text = "Notification Sound ID",
+    Default = "rbxassetid://82845990304289",
+    Placeholder = "rbxassetid://...",
+    Callback = function(Value)
+        -- Save SoundId
+    end,
+})
+
+NotifyTab:AddButton({
+    Text = "Reset Sound To Default",
+    Func = function()
+        Options.NotificationSoundId:SetValue("rbxassetid://82845990304289")
+    end,
+})
+
+NotifyTab:AddButton({
+    Text = "Test Notification",
+    Func = function()
+
+        if Toggles.NotificationSound.Value then
+            local Sound = Instance.new("Sound")
+            Sound.SoundId = Options.NotificationSoundId.Value
+            Sound.Volume = Options.NotificationVolume.Value
+            Sound.Parent = game:GetService("SoundService")
+            Sound:Play()
+
+            Sound.Ended:Connect(function()
+                Sound:Destroy()
+            end)
+        end
+
+        Library:Notify({
+            Title = "Test Notification",
+            Description = "This is a test notification.",
+            Time = 3,
+        })
+    end,
+})
+
+-- UI Settings
+local MenuGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu Options", "cog")
+
+MenuGroup:AddToggle("KeybindMenuOpen", {
+	Default = Library.KeybindFrame.Visible,
+	Text = "Open Keybind Menu",
+	Callback = function(Value)
+		Library.KeybindFrame.Visible = Value
+	end,
+})
+
+MenuGroup:AddToggle("ShowCustomCursor", {
+	Text = "Custom Cursor",
+	Default = Library.ShowCustomCursor,
+	Callback = function(Value)
+		Library.ShowCustomCursor = Value
+	end,
+})
+
+MenuGroup:AddToggle("ForceCheckboxToggle", {
+    Text = "Force Checkbox",
+    Default = true,
+    Callback = function(Value)
+        -- Intentionally left blank.
+    end,
+})
+
+-- Watermark
+local DraggableLabel = Library:AddDraggableLabel("Xecel")
+DraggableLabel:SetVisible(false)
+
+local FrameTimer = tick()
+local FrameCounter = 0
+local FPS = 60
+local WatermarkConnection = nil
+
+MenuGroup:AddToggle("WatermarkToggle", {
+	Text = "Show Watermark",
+	Default = false,
+	Tooltip = "Shows a draggable FPS and Ping status overlay on the screen.",
+	Callback = function(Value)
+		DraggableLabel:SetVisible(Value)
+
+		if Value then
+			if not WatermarkConnection then
+				WatermarkConnection = game:GetService("RunService").RenderStepped:Connect(function()
+					FrameCounter += 1
+
+					if (tick() - FrameTimer) >= 1 then
+						FPS = FrameCounter
+						FrameTimer = tick()
+						FrameCounter = 0
+					end
+
+					local Ping = 0
+					pcall(function()
+						Ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
+					end)
+
+					DraggableLabel:SetText(("Xecel | %s fps | %s ms"):format(
+						math.floor(FPS),
+						math.floor(Ping)
+					))
+				end)
+			end
+		else
+			if WatermarkConnection then
+				WatermarkConnection:Disconnect()
+				WatermarkConnection = nil
+			end
+		end
+	end,
+})
+
+Library.ToggleKeybind = Options.MenuKeybind
+
+MenuGroup:AddToggle("CreateLogsToggle", {
+    Text = "Create Logs",
+    Default = false,
+    Tooltip = "Toggles log creation",
+    Callback = function(Value)
+        print("Create Logs is now:", Value)
+    end,
+})
+
+MenuGroup:AddDivider({
+    Text = "Discord",
+    MarginTop = 1,
+    MarginBottom = 1
+})
+
+local JoinDiscordButton = MenuGroup:AddButton({
+    Text = "Join Discord",
+    Func = function()
+        if open_url then
+            open_url("https://discord.gg/PkrGuRqNx5")
+        elseif openurl then
+            openurl("https://discord.gg/PkrGuRqNx5")
+        else
+            setclipboard("https://discord.gg/PkrGuRqNx5")
+            Library:Notify({
+                Title = "Link Copied",
+                Description = "Your executor doesn't support opening URLs, link copied instead.",
+                Time = 3,
+            })
+        end
+    end,
+    Tooltip = "Opens the Discord invite directly",
+})
+
+JoinDiscordButton:AddButton({
+    Text = "Copy Link",
+    Func = function()
+        setclipboard("https://discord.gg/PkrGuRqNx5")
+        Library:Notify({
+            Title = "Copied",
+            Description = "Discord link copied to clipboard!",
+            Time = 3,
+        })
+    end,
+    DoubleClick = false,
+})
+
+MenuGroup:AddButton("Unload", function()
+	Library:Unload()
+end)
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+
+SaveManager:IgnoreThemeSettings()
+
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+
+ThemeManager:SetFolder("MyScriptHub")
+SaveManager:SetFolder("MyScriptHub/specific-game")
+SaveManager:SetSubFolder("specific-place")
+
+-- Builds our config menu on the right side of our tab
+SaveManager:BuildConfigSection(Tabs["UI Settings"])
+
+ThemeManager:ApplyToTab(Tabs["UI Settings"])
+
+SaveManager:LoadAutoloadConfig()
+
+Library.KeybindFrame.Visible = true
+Toggles.KeybindMenuOpen:SetValue(true)
